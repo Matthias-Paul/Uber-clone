@@ -52,7 +52,7 @@ const Onboarding = () => {
           title={ isLastSlide ? "Get Started" : "Next"}
           onPress={()=> isLastSlide ? router.replace("/(auth)/sign-up"):
             swiperRef.current?.scrollBy( 1 )  }
-          className="mt-10 mb-5 w-[89%] "
+          className="mt-10 mb-5 w-[90%] "
         />
       </SafeAreaView>
     </>
