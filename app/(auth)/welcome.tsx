@@ -41,19 +41,27 @@ const Onboarding = () => {
                 className="w-full h-[300px]  "
                 resizeMode="contain"
               />
-              <View className="w-full flex flex-row items-center justify-center mt-10  " > 
-                <Text className="text-black font-bold text-3xl mx-10 text-center " >{onboard?.title}</Text>
+              <View className="w-full flex flex-row items-center justify-center mt-10  ">
+                <Text className="text-black font-bold text-3xl mx-10 text-center ">
+                  {onboard?.title}
+                </Text>
               </View>
-              <Text  className="text-md font-JakartaSemiBold text-center text-[#858585] mt-3 mx-10  " >{onboard?.description}</Text>
+              <Text className="text-md font-JakartaSemiBold text-center text-[#858585] mt-3 mx-10  ">
+                {onboard?.description}
+              </Text>
             </View>
           ))}
         </Swiper>
-        <CustomButton
-          title={ isLastSlide ? "Get Started" : "Next"}
-          onPress={()=> isLastSlide ? router.replace("/(auth)/sign-up"):
-            swiperRef.current?.scrollBy( 1 )  }
-          className="mt-10 mb-5 w-[90%] "
-        />
+        <View className="mt-10 mb-5 w-[90%] ">
+          <CustomButton
+            title={isLastSlide ? "Get Started" : "Next"}
+            onPress={() =>
+              isLastSlide
+                ? router.replace("/(auth)/sign-up")
+                : swiperRef.current?.scrollBy(1)
+            }
+          />
+        </View>
       </SafeAreaView>
     </>
   );

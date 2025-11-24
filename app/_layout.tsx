@@ -3,6 +3,9 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
+import { ClerkProvider } from '@clerk/clerk-expo'
+import { tokenCache } from "@clerk/clerk-expo/token-cache";
+
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
@@ -30,13 +33,14 @@ export default function RootLayout() {
 
   return (
     <>
-    
-      <StatusBar style="dark" backgroundColor="#ffffff" />
-      <Stack>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />{" "}
-        <Stack.Screen name="(root)" options={{ headerShown: false }} />
-      </Stack>
+      <ClerkProvider publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
+        <StatusBar style="dark" backgroundColor="#ffffff" />
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />{" "}
+          <Stack.Screen name="(root)" options={{ headerShown: false }} />
+        </Stack>
+      </ClerkProvider>
     </>
   );
 }

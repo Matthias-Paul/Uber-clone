@@ -1,5 +1,11 @@
 import { TextInputProps, TouchableOpacityProps } from "react-native";
 
+declare interface ErrorModalTypes {
+  visible: boolean;
+  message: string;
+  onClose: () => void;
+}
+
 declare interface Driver {
   driver_id: number;
   first_name: string;
