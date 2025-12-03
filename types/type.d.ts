@@ -1,3 +1,4 @@
+import { verifyEmail } from './../services/auth';
 import { TextInputProps, TouchableOpacityProps } from "react-native";
 
 declare interface ErrorModalTypes {
@@ -94,6 +95,25 @@ declare interface InputFieldProps extends TextInputProps {
   iconStyle?: string;
   className?: string;
 }
+
+declare interface loginTypes {
+  email: string;
+  password: string;
+}
+
+declare interface verifyEmailTypes {
+  token: string;
+  email: string;
+}
+
+
+declare interface signUpTypes {
+  username: string;
+  email: string;
+  role: "driver" | "rider";
+  password: string;
+}
+
 
 declare interface PaymentProps {
   fullName: string;

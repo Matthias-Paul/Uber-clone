@@ -3,8 +3,10 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import { ClerkProvider } from '@clerk/clerk-expo'
-import { tokenCache } from "@clerk/clerk-expo/token-cache";
+import { store, persistor } from "../redux/store";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -31,16 +33,25 @@ export default function RootLayout() {
     return null;
   }
 
+  const queryClient = new QueryClient();
+
   return (
     <>
-      <ClerkProvider publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
-        <StatusBar style="dark" backgroundColor="#ffffff" />
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />{" "}
-          <Stack.Screen name="(root)" options={{ headerShown: false }} />
-        </Stack>
-      </ClerkProvider>
+      <QueryClientProvider client={queryClient}>
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <StatusBar style="dark" backgroundColor="#ffffff" />
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="(auth)"
+                options={{ headerShown: false }}
+              />{" "}
+              <Stack.Screen name="(root)" options={{ headerShown: false }} />
+            </Stack>
+          </PersistGate>
+        </Provider>
+      </QueryClientProvider>
     </>
   );
 }

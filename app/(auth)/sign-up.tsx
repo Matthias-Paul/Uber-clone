@@ -5,126 +5,148 @@ import InputField from "@/components/inputField";
 import { useState } from "react";
 import CustomButton from "@/components/customButton";
 import OAuth from "@/components/oAuth";
-import { useSignUp } from "@clerk/clerk-expo";
 import { Link, useRouter } from "expo-router";
-import Modal, { ReactNativeModal } from "react-native-modal";
+import { ReactNativeModal } from "react-native-modal";
 import ErrorModal from "@/components/errorModal";
 import { Ionicons } from "@expo/vector-icons";
+import { useDispatch, useSelector } from "react-redux";
+import { useMutation } from "@tanstack/react-query";
+import { fetchSignUpApi } from "@/services/auth";
+import { signInSuccess } from "@/redux/slice/authSlice";
+import { signUpTypes } from "@/types/type";
+import { fetchVerifyEmailAPI } from "@/services/auth";
+import { verifyEmailTypes } from "@/types/type";
+import { RootState } from "@/redux/store";
 
 const SignUp = () => {
-  const { isLoaded, signUp, setActive } = useSignUp();
+  const dispatch = useDispatch();
   const router = useRouter();
-  const [pendingVerification, setPendingVerification] = useState(false);
-  const [code, setCode] = useState("");
-  const [signUpErrorMsg, setSignUpErrorMsg] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
+  const { loginUser } = useSelector((state: RootState) => state.auth);
 
+  const [signUpErrorMsg, setSignUpErrorMsg] = useState("");
+  const [verifyErrorMsg, setVerifyErrorMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [code, setCode] = useState("");
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   const [form, setForm] = useState({
-    name: "",
+    username: "",
     email: "",
     password: "",
+    role: "rider" as "rider" | "driver",
   });
 
-  const [verification, setVerification] = useState({
-    status: "",
-    error: "",
+  const signUpMutation = useMutation({
+    mutationFn: ({ username, email, password, role }: signUpTypes) =>
+      fetchSignUpApi({ username, email, password, role }),
+
+    onSuccess: (data) => {
+      console.log("Sign up success:", data);
+
+      dispatch(signInSuccess(data));
+      setUserEmail(form.email);
+      setShowVerificationModal(true);
+
+      // Keep email for verification, clear other fields
+      setForm({
+        username: "",
+        email: form.email, 
+        password: "",
+        role: "rider",
+      });
+    },
+
+    onError: (err: any) => {
+      console.log("SignUp failed:", err?.message);
+      setSignUpErrorMsg(err?.message || "SignUp failed");
+    },
   });
 
-  // Handle submission of sign-up form
-  const onSignUpPress = async () => {
-    if (!isLoaded) return;
-    // Start sign-up process using email and password provided
-    try {
-      if (form?.email === "" || form.name === "" || form?.password === "") {
-        setSignUpErrorMsg("All fields are required!");
-        console.log("all fields are required");
-        return;
-      }
+  const handleSignUp = () => {
+    // Reset error messages
+    setSignUpErrorMsg("");
+    setVerifyErrorMsg("");
 
-      await signUp.create({
-        emailAddress: form.email,
-        password: form.password,
-      });
-
-      // Send user an email with verification code
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-
-      // Set 'pendingVerification' to true to display second form
-      // and capture OTP code
-      setPendingVerification(true);
-    } catch (err) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
-      console.log("error:", err);
-      if (err && typeof err === "object" && "errors" in err) {
-        const longMessage = err.errors?.[0]?.longMessage;
-
-        setSignUpErrorMsg(longMessage || "Something went wrong");
-      } else {
-        setSignUpErrorMsg("Something went wrong");
-      }
+    // Validate form
+    if (!form.username || !form.email || !form.password) {
+      setSignUpErrorMsg("Please fill in all fields");
+      return;
     }
-  };
 
-  // Handle submission of verification form
-  const onVerifyPress = async () => {
-    if (!isLoaded) return;
-
-    try {
-      // Use the code the user provided to attempt verification
-      const signUpAttempt = await signUp.attemptEmailAddressVerification({
-        code,
-      });
-
-      // If verification was completed, set the session to active
-      // and redirect the user
-      if (signUpAttempt.status === "complete") {
-        await setActive({ session: signUpAttempt.createdSessionId });
-        setVerification((prev) => ({ ...prev, status: "complete" }));
-        setPendingVerification(false);
-
-        // router.replace("/");
-      } else {
-        // If the status is not complete, check why. User may need to
-        // complete further steps.
-        setVerification((prev) => ({ ...prev, error: "Verification Failed" }));
-
-      }
-    } catch (err) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
-      console.error(JSON.stringify(err, null, 2));
-      if (err && typeof err === "object" && "errors" in err) {
-        setVerification((prev) => ({
-          ...prev,
-          error: err.errors?.[0]?.longMessage || "Something went wrong",
-        }));
-      } else {
-        setVerification((prev) => ({
-          ...prev,
-          error: "Something went wrong",
-        }));
-      }
-
-      console.log("error:", err);
+    // Validate email format
+    const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    if (!emailRegex.test(form.email)) {
+      setSignUpErrorMsg("Please enter a valid email address");
+      return;
     }
+
+    // Validate password length
+    if (form.password.length < 6) {
+      setSignUpErrorMsg("Password must be at least 6 characters");
+      return;
+    }
+
+    signUpMutation.mutate({
+      username: form.username,
+      email: form.email,
+      password: form.password,
+      role: form.role,
+    });
   };
 
-  const BroweHome = () => {
-    router.replace("/");
-    setVerification((prev) => ({ ...prev, status: "" }));
+  // Verify email mutation
+  const verifyMutation = useMutation({
+    mutationFn: ({ token, email }: verifyEmailTypes) =>
+      fetchVerifyEmailAPI({ token, email }),
+
+    onSuccess: (data) => {
+      console.log("Verification successful:", data);
+      dispatch(signInSuccess(data));
+      setCode("");
+      setShowVerificationModal(false);
+      setShowSuccessModal(true);
+
+    },
+
+    onError: (err: any) => {
+      console.log("Verification failed:", err?.message);
+      setVerifyErrorMsg(err?.message || "Verification failed");
+    },
+  });
+
+  const verifyEmail = () => {
+    // Reset error
+    setVerifyErrorMsg("");
+
+    // Validate OTP
+    if (!code || code.length !== 6) {
+      setVerifyErrorMsg("Please enter a valid 6-digit code");
+      return;
+    }
+
+    verifyMutation.mutate({
+      token: code,
+      email: userEmail,
+    });
   };
+
+  const browseHome = () => {
+    setShowSuccessModal(false);
+    router.replace("/(root)/(tabs)/home");
+  };
+
   return (
     <>
       <ScrollView className="flex-1 bg-white">
-        <SafeAreaView className="flex-1 bg-white ">
-          <View className="w-full h-[250px] relative ">
+        <SafeAreaView className="flex-1 bg-white">
+          <View className="w-full h-[250px] relative">
             <Image
               source={images?.signUpCar}
-              className="w-full z-0 h-[250px]  "
+              className="w-full z-0 h-[250px]"
             />
-            <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5 ">
+            <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
               Create Your Account
             </Text>
           </View>
@@ -133,9 +155,9 @@ const SignUp = () => {
               label="Name"
               placeholder="Enter your name"
               icon={icons?.person}
-              value={form?.name}
-              onChangeText={(value) =>
-                setForm((prev) => ({ ...prev, name: value }))
+              value={form?.username}
+              onChangeText={
+                (value) => setForm((prev) => ({ ...prev, username: value })) // ✅ Fixed: was 'name'
               }
             />
             <InputField
@@ -143,16 +165,18 @@ const SignUp = () => {
               placeholder="Enter your email"
               icon={icons?.email}
               value={form?.email}
+              keyboardType="email-address"
+              autoCapitalize="none"
               onChangeText={(value) =>
                 setForm((prev) => ({ ...prev, email: value }))
               }
             />
-            <View className="flex  relative">
+            <View className="flex relative">
               <InputField
                 label="Password"
                 placeholder="Enter your password"
                 icon={icons?.lock}
-                inputStyle="pr-14 "
+                inputStyle="pr-14"
                 secureTextEntry={!showPassword}
                 value={form?.password}
                 onChangeText={(value) =>
@@ -160,7 +184,7 @@ const SignUp = () => {
                 }
               />
               <Pressable
-                className=" absolute bottom-6 right-2 "
+                className="absolute bottom-6 right-2"
                 onPress={() => setShowPassword(!showPassword)}
               >
                 <Ionicons
@@ -172,50 +196,102 @@ const SignUp = () => {
               </Pressable>
             </View>
 
+            {/* Role Selection */}
+            <View className="mt-4">
+              <Text className="text-lg font-JakartaSemiBold mb-3">
+                I want to
+              </Text>
+              <View className="flex-row gap-3">
+                <Pressable
+                  onPress={() =>
+                    setForm((prev) => ({ ...prev, role: "rider" }))
+                  }
+                  className={`flex-1 p-4 rounded-lg border-2 ${
+                    form.role === "rider"
+                      ? "border-primary-500 bg-primary-50"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <Text
+                    className={`text-center font-JakartaSemiBold ${
+                      form.role === "rider"
+                        ? "text-primary-500"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    🚗 Book Rides
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() =>
+                    setForm((prev) => ({ ...prev, role: "driver" }))
+                  }
+                  className={`flex-1 p-4 rounded-lg border-2 ${
+                    form.role === "driver"
+                      ? "border-primary-500 bg-primary-50"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <Text
+                    className={`text-center font-JakartaSemiBold ${
+                      form.role === "driver"
+                        ? "text-primary-500"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    🚕 Drive & Earn
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
             <CustomButton
-              title={"Sign Up"}
-              onPress={onSignUpPress}
-              className="mt-6  "
+              title={signUpMutation.isPending ? "Signing Up..." : "Sign Up"}
+              onPress={handleSignUp} 
+              className="mt-6"
+              disabled={signUpMutation.isPending}
             />
 
             {/* OAuth */}
             <OAuth />
 
-            <Link className="text-lg mt-10 text-center  " href="/sign-in">
+            <Link className="text-lg mt-10 text-center" href="/sign-in">
               <Text>Already have an account? </Text>
               <Text className="text-primary-500">Log In</Text>
             </Link>
           </View>
+
           <ErrorModal
             visible={!!signUpErrorMsg}
             message={signUpErrorMsg}
             onClose={() => setSignUpErrorMsg("")}
           />
-          <ReactNativeModal isVisible={verification?.status === "complete"}>
-            <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]   ">
+
+          {/* Success Modal */}
+          <ReactNativeModal isVisible={showSuccessModal}>
+            <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]">
               <Image
                 source={images?.check}
-                className="w-[110px] h-[110px] mx-auto my-5   "
+                className="w-[110px] h-[110px] mx-auto my-5"
               />
-              <Text className="text-3xl font-JakartaBold text-center   ">
-                Verified{" "}
+              <Text className="text-3xl font-JakartaBold text-center">
+                Verified
               </Text>
-              <Text className="text-base font-Jakarta text-gray-400 mt-2 mb-5 ">
-                {" "}
-                You have successfully verified your account.{" "}
+              <Text className="text-base font-Jakarta text-gray-400 mt-2 mb-5 text-center">
+                You have successfully verified your account.
               </Text>
-              <CustomButton title="Browse Home" onPress={BroweHome} />
+              <CustomButton title="Browse Home" onPress={browseHome} />
             </View>
           </ReactNativeModal>
 
-          {/*verification modal */}
-          <ReactNativeModal isVisible={pendingVerification}>
-            <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]   ">
-              <Text className="text-2xl font-JakartaExtraBold  mb-2   ">
-                Verification{" "}
+          {/* Verification Modal */}
+          <ReactNativeModal isVisible={showVerificationModal}>
+            <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]">
+              <Text className="text-2xl font-JakartaExtraBold mb-2">
+                Verification
               </Text>
-              <Text className=" font-Jakarta  mb-5   ">
-                We&#39;ve sent a verificationcode to {form?.email}{" "}
+              <Text className="font-Jakarta mb-5">
+                We've sent a verification code to {userEmail || form.email}
               </Text>
               <InputField
                 label="Code"
@@ -223,18 +299,30 @@ const SignUp = () => {
                 keyboardType="numeric"
                 value={code}
                 placeholder="Enter your verification code"
-                onChangeText={(code) => setCode(code)}
+                onChangeText={(value) => setCode(value)}
+                maxLength={6}
               />
-              {verification?.error && (
-                <Text className="text-red-500 mt-1 ">
-                  {verification?.error}
+              {verifyErrorMsg && (
+                <Text className="text-red-500 text-sm mt-1">
+                  {verifyErrorMsg}
                 </Text>
               )}
               <CustomButton
-                title="Verify"
-                onPress={onVerifyPress}
-                className="mt-5 bg-success-500 "
+                title={verifyMutation.isPending ? "Verifying..." : "Verify"}
+                onPress={verifyEmail}
+                className="mt-5 bg-success-500"
+                disabled={verifyMutation.isPending}
               />
+              <Pressable
+                onPress={() => {
+                  setShowVerificationModal(false);
+                  setCode("");
+                  setVerifyErrorMsg("");
+                }}
+                className="mt-3"
+              >
+                <Text className="text-center text-gray-500">Cancel</Text>
+              </Pressable>
             </View>
           </ReactNativeModal>
         </SafeAreaView>
