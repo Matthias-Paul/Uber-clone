@@ -6,12 +6,12 @@ export default function Layout() {
   const TabIcon = ({ icon, focused }: { icon: any; focused: boolean }) => {
     return (
       <View
-        className={`flex flex-row rounded-full justify-center items-center ${
+        className={`flex  flex-row rounded-full justify-center items-center ${
           focused ? "bg-general-300" : ""
         }`}
       >
         <View
-          className={`rounded-full w-12 h-12 items-center justify-center ${
+          className={`rounded-full w-12 h-12 ml-3 items-center justify-center ${
             focused ? "bg-general-400" : ""
           }`}
         >
@@ -39,6 +39,7 @@ export default function Layout() {
           overflow: "hidden",
           marginHorizontal: 20,
           marginBottom: 20,
+          paddingBottom:30,
           height: 78,
           display: "flex",
           justifyContent: "space-between",

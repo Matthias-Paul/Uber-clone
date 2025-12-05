@@ -51,7 +51,7 @@ const SignIn = () => {
         setShowVerificationModal(true);
       } else {
         // User verified - proceed to home
-        dispatch(signInSuccess(data));
+      dispatch(signInSuccess(data?.data?.user));
         setForm({
           email: "",
           password: "",
@@ -90,7 +90,7 @@ const SignIn = () => {
 
     onSuccess: (data) => {
       console.log("Verification successful:", data);
-      dispatch(signInSuccess(data));
+      dispatch(signInSuccess(data?.data?.user));
       setCode("");
       setShowVerificationModal(false);
       setShowSuccessModal(true);
