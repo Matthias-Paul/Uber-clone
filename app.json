@@ -9,8 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
-    }, 
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyAm8_KxGnOWilJdLnRGxV6m06cMparqWXg"
+      }
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -18,8 +21,14 @@
         "backgroundImage": "./assets/images/get-started.png",
         "monochromeImage": "./assets/images/get-started.png"
       },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAm8_KxGnOWilJdLnRGxV6m06cMparqWXg"
+        }
+      },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.Uber"
     },
     "web": {
       "output": "static",
@@ -39,7 +48,9 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "react-native-maps",
+      "expo-maps"
     ],
     "experiments": {
       "typedRoutes": true,

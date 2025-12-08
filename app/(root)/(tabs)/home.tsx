@@ -13,6 +13,10 @@ import { RootState } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { logOutSuccess } from "@/redux/slice/authSlice";
 import { useRouter } from "expo-router";
+import GoogleTextInput from "@/components/googleTextInput";
+import Map from "@/components/map";
+
+
 
 const Home = () => {
   const loading = false;
@@ -142,6 +146,9 @@ const Home = () => {
       console.log(error);
     }
   };
+
+  const handleDestinationPress = async () => {};
+
   return (
     <>
       <SafeAreaView className="flex-1  items-center justify-start bg-general-500">
@@ -176,7 +183,7 @@ const Home = () => {
           )}
           ListHeaderComponent={() => (
             <>
-              <View className="flex flex-row mb-5 items-center justify-between pb-3 ">
+              <View className="flex flex-row mb-3 items-center justify-between pb-3 ">
                 <Text className="text-2xl font-JakartaExtraBold  ">
                   Welcome, {loginUser?.username} 👋
                 </Text>
@@ -187,12 +194,28 @@ const Home = () => {
                   <Image source={icons?.out} className=" w-10 h-10 " />
                 </TouchableOpacity>
               </View>
+              <GoogleTextInput
+                icon={icons?.search}
+                containerStyle={`bg-white shadow-md shadow-neutral-300   `}
+                handlePress={handleDestinationPress}
+              />
+
+              <>
+                <Text className="my-3 text-xl font-JakartaBold  ">
+                  Your current location
+                </Text>
+                <View className=" flex flex-row items-center h-[300px] bg-transparent  ">
+                  <Map />
+                </View>
+              </>
+              <Text className="my-3 text-xl font-JakartaBold  ">
+                Recent Rides 
+              </Text>
             </>
           )}
         />
       </SafeAreaView>
     </>
-  );
-};
+  )};
 
 export default Home;
