@@ -204,7 +204,7 @@ const Home = () => {
                 <Text className="my-3 text-xl font-JakartaBold  ">
                   Your current location
                 </Text>
-                <View className=" flex flex-row items-center h-[300px] bg-transparent  ">
+                <View className=" flex flex-row items-center h-[300px]   ">
                   <Map />
                 </View>
               </>

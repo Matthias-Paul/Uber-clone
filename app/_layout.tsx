@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
+console.log("Hello")
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     "Jakarta-Bold": require("../assets/fonts/PlusJakartaSans-Bold.ttf"),
