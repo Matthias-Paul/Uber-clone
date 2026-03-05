@@ -45,7 +45,7 @@ const SignUp = () => {
     onSuccess: (data) => {
       console.log("Sign up success:", data);
 
-      dispatch(signInSuccess(data?.data?.user));
+      dispatch(signInSuccess(data));
       setUserEmail(form.email);
       setShowVerificationModal(true);
 
@@ -103,7 +103,7 @@ const SignUp = () => {
 
     onSuccess: (data) => {
       console.log("Verification successful:", data);
-      dispatch(signInSuccess(data?.data?.user));
+      dispatch(signInSuccess(data));
       setCode("");
       setShowVerificationModal(false);
       setShowSuccessModal(true);

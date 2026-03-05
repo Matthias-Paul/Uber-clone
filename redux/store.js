@@ -15,7 +15,18 @@ const rootReducer = combineReducers({
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  version: 1,
+  version: 2,
+  migrate: async (state) => {
+    if (!state) return state;
+
+    return {
+      ...state,
+      auth: {
+        ...state.auth,
+        loginUser: state?.auth?.loginUser ?? null,
+      },
+    };
+  },
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

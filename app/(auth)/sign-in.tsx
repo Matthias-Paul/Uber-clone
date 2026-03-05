@@ -45,13 +45,22 @@ const SignIn = () => {
       console.log("Login success:", data);
 
       // Check if user needs email verification
-      if (data?.statusCode === 403) {
+      const message = String(data?.message || "").toLowerCase();
+      const needsVerification =
+        data?.statusCode === 403 ||
+        data?.data?.user?.isEmailVerified === false ||
+        data?.data?.user?.isVerified === false ||
+        message.includes("verify") ||
+        message.includes("verification");
+
+      if (needsVerification) {
         // User not verified - show verification modal
         setUserEmail(form.email);
+        setSignInErrorMsg("");
         setShowVerificationModal(true);
       } else {
         // User verified - proceed to home
-      dispatch(signInSuccess(data?.data?.user));
+      dispatch(signInSuccess(data));
         setForm({
           email: "",
           password: "",
@@ -62,7 +71,21 @@ const SignIn = () => {
 
     onError: (err: any) => {
       console.log("Login failed:", err?.message);
-      setSignInErrorMsg(err?.message || "Login failed");
+      const errorMessage = err?.message || "Login failed";
+      const needsVerification =
+        typeof errorMessage === "string" &&
+        (errorMessage.toLowerCase().includes("verify") ||
+          errorMessage.toLowerCase().includes("verification") ||
+          errorMessage.toLowerCase().includes("not verified"));
+
+      if (needsVerification) {
+        setUserEmail(form.email);
+        setSignInErrorMsg("");
+        setShowVerificationModal(true);
+        return;
+      }
+
+      setSignInErrorMsg(errorMessage);
     },
   });
 
@@ -90,7 +113,7 @@ const SignIn = () => {
 
     onSuccess: (data) => {
       console.log("Verification successful:", data);
-      dispatch(signInSuccess(data?.data?.user));
+      dispatch(signInSuccess(data));
       setCode("");
       setShowVerificationModal(false);
       setShowSuccessModal(true);
@@ -149,8 +172,10 @@ const SignIn = () => {
           <Text className="text-2xl font-JakartaExtraBold mb-2">
             Verification
           </Text>
-          <Text className="font-Jakarta mb-5">
-            We've sent a verification code to {userEmail || form.email}
+
+          <Text className="text-sm font-Jakarta mb-2">
+            Your email is not verified. A verification code has been sent to
+            your email.{" "}
           </Text>
           <InputField
             label="Code"

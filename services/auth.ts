@@ -1,12 +1,12 @@
 import { signUpTypes, loginTypes, verifyEmailTypes } from "@/types/type";
 
-const BASE_URL = "https://uber-clone-backend-kappa.vercel.app"
+const BASE_URL = "http://192.168.219.19:3000";
 
 
 // In your services/auth.ts file
 export const fetchLoginApi = async ({ email, password }: loginTypes) => {
   try {
-    const response = await fetch(`${BASE_URL}/api/auth/login`, {
+    const response = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -30,7 +30,7 @@ export const fetchLoginApi = async ({ email, password }: loginTypes) => {
 };
 
 export const fetchSignUpApi = async ({ username, email, password, role }:signUpTypes) => {
-  const res = await fetch(`${BASE_URL}/api/auth/register`, {
+  const res = await fetch(`${BASE_URL}/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -53,7 +53,7 @@ export const fetchSignUpApi = async ({ username, email, password, role }:signUpT
 
 
 export const fetchVerifyEmailAPI = async ({ token, email }: verifyEmailTypes) => {
-  const res = await fetch(`${BASE_URL}/api/auth/verify-email`, {
+  const res = await fetch(`${BASE_URL}/auth/verify-email`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

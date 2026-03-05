@@ -11,7 +11,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
-console.log("Hello")
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     "Jakarta-Bold": require("../assets/fonts/PlusJakartaSans-Bold.ttf"),
@@ -34,8 +35,6 @@ export default function RootLayout() {
     return null;
   }
 
-  const queryClient = new QueryClient();
-
   return (
     <>
       <QueryClientProvider client={queryClient}>
@@ -44,10 +43,7 @@ export default function RootLayout() {
             <StatusBar style="dark" backgroundColor="#ffffff" />
             <Stack>
               <Stack.Screen name="index" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="(auth)"
-                options={{ headerShown: false }}
-              />{" "}
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
               <Stack.Screen name="(root)" options={{ headerShown: false }} />
             </Stack>
           </PersistGate>

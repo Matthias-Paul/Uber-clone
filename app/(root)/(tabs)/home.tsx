@@ -16,13 +16,11 @@ import { useRouter } from "expo-router";
 import GoogleTextInput from "@/components/googleTextInput";
 import Map from "@/components/map";
 
-
-
 const Home = () => {
   const loading = false;
 
   const { loginUser } = useSelector((state: RootState) => state.auth);
-
+  console.log("loginUser", loginUser);
   const recentRides = [
     {
       ride_id: "1",
@@ -185,7 +183,7 @@ const Home = () => {
             <>
               <View className="flex flex-row mb-3 items-center justify-between pb-3 ">
                 <Text className="text-2xl font-JakartaExtraBold  ">
-                  Welcome, {loginUser?.username} 👋
+                  Welcome, {loginUser?.data?.username} 👋
                 </Text>
                 <TouchableOpacity
                   onPress={handleLogOut}
@@ -209,13 +207,14 @@ const Home = () => {
                 </View>
               </>
               <Text className="my-3 text-xl font-JakartaBold  ">
-                Recent Rides 
+                Recent Rides
               </Text>
             </>
           )}
         />
       </SafeAreaView>
     </>
-  )};
+  );
+};
 
 export default Home;
