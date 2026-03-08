@@ -42,8 +42,6 @@ const SignIn = () => {
       fetchLoginApi({ email, password }),
 
     onSuccess: (data) => {
-      console.log("Login success:", data);
-
       // Check if user needs email verification
       const message = String(data?.message || "").toLowerCase();
       const needsVerification =
@@ -112,7 +110,6 @@ const SignIn = () => {
       fetchVerifyEmailAPI({ token, email }),
 
     onSuccess: (data) => {
-      console.log("Verification successful:", data);
       dispatch(signInSuccess(data));
       setCode("");
       setShowVerificationModal(false);

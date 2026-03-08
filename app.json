@@ -15,6 +15,9 @@
       }
     },
     "android": {
+      "permissions": [
+        "WAKE_LOCK"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/get-started.png",

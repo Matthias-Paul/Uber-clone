@@ -1,10 +1,14 @@
 import { icons } from "@/constants";
-import { setUserLatitude, setUserLongitude } from "@/redux/slice/locationSlice";
+import {
+  setUserAddress,
+  setUserLatitude,
+  setUserLongitude,
+} from "@/redux/slice/locationSlice";
 import { store } from "@/redux/store";
 import { MarkerData } from "@/types/type";
 import { calculateRegion, generateMarkersFromData } from "@/utils/map";
 import * as Location from "expo-location";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useDispatch, useSelector } from "react-redux";
@@ -13,11 +17,20 @@ type RootState = ReturnType<typeof store.getState>;
 
 const Map = () => {
   const dispatch = useDispatch();
-  const { userLatitude, userLongitude, destinationLatitude, destinationLongitude } = useSelector((state: RootState) => state.location);
+  const {
+    userLatitude,
+    userLongitude,
+    userAddress,
+    destinationLatitude,
+    destinationLongitude,
+  } = useSelector((state: RootState) => state.location);
   const { drivers, selectedDriver } = useSelector((state: RootState) => state.driver);
   const [markers, setMarkers] = useState<MarkerData[]>([]);
-
   const [loading, setLoading] = useState(true);
+  const [mapRegion, setMapRegion] = useState<any>(null);
+  const mapRef = useRef<MapView | null>(null);
+  const lastAcceptedLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const userAddressRef = useRef<string | null>(userAddress);
 
   const UberDrivers = [
     {
@@ -80,7 +93,75 @@ const Map = () => {
     }
   }, [drivers, userLatitude, userLongitude]);
 
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const getDistanceInMeters = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
+    const earthRadius = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadius * c;
+  };
+
+  const applyLocationUpdate = async (
+    latitude: number,
+    longitude: number,
+    shouldReverseGeocode = false
+  ) => {
+    dispatch(setUserLatitude(latitude));
+    dispatch(setUserLongitude(longitude));
+
+    if (shouldReverseGeocode) {
+      try {
+        const reverseGeocode = await Promise.race([
+          Location.reverseGeocodeAsync({
+            latitude,
+            longitude,
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Reverse geocode timeout")), 3500)
+          ),
+        ]);
+
+        const place = reverseGeocode?.[0];
+        const formattedAddress = [
+          place?.name,
+          place?.street,
+          place?.streetNumber,
+          place?.subregion,
+          place?.city || place?.district,
+          place?.region,
+          place?.country,
+        ]
+          .filter(Boolean)
+          .join(", ");
+
+        const fallbackAddress = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+        dispatch(setUserAddress(formattedAddress || fallbackAddress));
+      } catch (error) {
+        console.log("Reverse geocode failed, using coordinates only:", error);
+        dispatch(setUserAddress(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`));
+      }
+    }
+  };
+
   useEffect(() => {
+    userAddressRef.current = userAddress;
+  }, [userAddress]);
+
+  useEffect(() => {
+    let subscription: Location.LocationSubscription | null = null;
+
     (async () => {
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
@@ -94,18 +175,95 @@ const Map = () => {
           return;
         }
 
-        let currentLocation = await Location.getCurrentPositionAsync({
+        const currentLocation = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.BestForNavigation,
         });
 
-        dispatch(setUserLatitude(currentLocation.coords.latitude));
-        dispatch(setUserLongitude(currentLocation.coords.longitude));
+        const { latitude, longitude, accuracy } = currentLocation.coords;
+        // Always accept the first fresh fix to avoid showing stale persisted coordinates.
+        lastAcceptedLocationRef.current = { latitude, longitude };
+        await applyLocationUpdate(latitude, longitude, true);
+        setMapRegion({
+          latitude,
+          longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+        mapRef.current?.animateToRegion(
+          {
+            latitude,
+            longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          },
+          700
+        );
+
+        subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            distanceInterval: 3,
+            timeInterval: 2500,
+          },
+          async (position) => {
+            const nextLat = position.coords.latitude;
+            const nextLon = position.coords.longitude;
+            const nextAccuracy = position.coords.accuracy ?? 999;
+
+            // Ignore only very poor fixes.
+            if (nextAccuracy > 120) return;
+
+            const previous = lastAcceptedLocationRef.current;
+            let moved = 0;
+            if (previous) {
+              moved = getDistanceInMeters(
+                previous.latitude,
+                previous.longitude,
+                nextLat,
+                nextLon
+              );
+
+              if (moved < 4) return;
+            }
+
+            lastAcceptedLocationRef.current = {
+              latitude: nextLat,
+              longitude: nextLon,
+            };
+            const shouldRefreshAddress = !userAddressRef.current || moved >= 100;
+            await applyLocationUpdate(nextLat, nextLon, shouldRefreshAddress);
+            setMapRegion((prev: any) =>
+              prev
+                ? { ...prev, latitude: nextLat, longitude: nextLon }
+                : {
+                    latitude: nextLat,
+                    longitude: nextLon,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }
+            );
+            mapRef.current?.animateToRegion(
+              {
+                latitude: nextLat,
+                longitude: nextLon,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              },
+              700
+            );
+          }
+        );
+
         setLoading(false);
       } catch (error) {
         console.log("Error getting location:", error);
         setLoading(false);
       }
     })();
+
+    return () => {
+      if (subscription) subscription.remove();
+    };
   }, []);
 
   const region = calculateRegion({
@@ -137,14 +295,23 @@ const Map = () => {
   return (
     <View style={styles.mapContainer}>
       <MapView
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
-        initialRegion={region}
-        showsUserLocation={true}
+        initialRegion={mapRegion || region}
+        region={mapRegion || region}
+        showsUserLocation={false}
         showsMyLocationButton={true}
         zoomEnabled={true}
         scrollEnabled={true}
       >
+        {userLatitude && userLongitude ? (
+          <Marker
+            coordinate={{ latitude: userLatitude, longitude: userLongitude }}
+            title="You"
+            pinColor="#0286FF"
+          />
+        ) : null}
         {markers.map((marker) => (
           <Marker
             key={marker._id}
@@ -164,7 +331,7 @@ const Map = () => {
 const styles = StyleSheet.create({
   mapContainer: {
     width: "100%",
-    height: 300, // Give it a fixed height
+    flex: 1,
     borderRadius: 16,
     overflow: "hidden",
   },
@@ -173,7 +340,7 @@ const styles = StyleSheet.create({
   },
   container: {
     width: "100%",
-    height: 300,
+    flex: 1,
     borderRadius: 16,
     backgroundColor: "#f3f4f6",
     alignItems: "center",

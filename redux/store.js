@@ -25,6 +25,14 @@ const persistConfig = {
         ...state.auth,
         loginUser: state?.auth?.loginUser ?? null,
       },
+      location: {
+        userLatitude: state?.location?.userLatitude ?? null,
+        userLongitude: state?.location?.userLongitude ?? null,
+        userAddress: state?.location?.userAddress ?? null,
+        destinationLatitude: state?.location?.destinationLatitude ?? null,
+        destinationLongitude: state?.location?.destinationLongitude ?? null,
+        destinationAddress: state?.location?.destinationAddress ?? null,
+      },
     };
   },
 };

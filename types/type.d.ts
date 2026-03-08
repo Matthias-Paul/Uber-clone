@@ -1,5 +1,9 @@
 import { verifyEmail } from './../services/auth';
-import { TextInputProps, TouchableOpacityProps } from "react-native";
+import {
+  ImageSourcePropType,
+  TextInputProps,
+  TouchableOpacityProps,
+} from "react-native";
 
 declare interface ErrorModalTypes {
   visible: boolean;
@@ -20,7 +24,7 @@ declare interface Driver {
 declare interface MarkerData {
   latitude: number;
   longitude: number;
-  _id: number;
+  id: number;
   title: string;
   profile_image_url: string;
   car_image_url: string;
@@ -70,7 +74,7 @@ declare interface ButtonProps extends TouchableOpacityProps {
 }
 
 declare interface GoogleInputProps {
-  icon?: string;
+  icon?: ImageSourcePropType | string;
   initialLocation?: string;
   containerStyle?: string;
   textInputBackgroundColor?: string;

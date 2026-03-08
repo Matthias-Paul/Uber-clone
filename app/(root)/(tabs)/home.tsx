@@ -15,12 +15,16 @@ import { logOutSuccess } from "@/redux/slice/authSlice";
 import { useRouter } from "expo-router";
 import GoogleTextInput from "@/components/googleTextInput";
 import Map from "@/components/map";
+import {
+  setDestinationLatitude,
+  setDestinationLongitude,
+  setDestinationAddress,
+} from "@/redux/slice/locationSlice";
 
 const Home = () => {
   const loading = false;
 
   const { loginUser } = useSelector((state: RootState) => state.auth);
-  console.log("loginUser", loginUser);
   const recentRides = [
     {
       ride_id: "1",
@@ -145,7 +149,17 @@ const Home = () => {
     }
   };
 
-  const handleDestinationPress = async () => {};
+  const handleDestinationPress = async (location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  }) => {
+    dispatch(setDestinationAddress(location.address));
+    dispatch(setDestinationLatitude(location.latitude));
+    dispatch(setDestinationLongitude(location.longitude));
+
+    router.push("/(root)/find-ride");
+  };
 
   return (
     <>
